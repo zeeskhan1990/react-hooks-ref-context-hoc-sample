@@ -3,6 +3,10 @@ import React, { Component } from 'react';
 import classes from './App.css';
 import Persons from '../components/Persons/Persons';
 import Cockpit from '../components/Cockpit/Cockpit';
+import WithClass from '../hoc/WithClass'
+import withClassCurry from '../hoc/withClassCurry'
+import Aux from '../hoc/auxillary';
+import AuthContext from '../context/auth-context'
 
 class App extends Component {
   constructor(props) {
@@ -17,13 +21,16 @@ class App extends Component {
       { id: 'asdf11', name: 'Stephanie', age: 26 }
     ],
     otherState: 'some other value',
-    showPersons: false
+    showPersons: false,
+    showCockpit: true,
+    authenticated: false
   };
 
   static getDerivedStateFromProps(props, state) {
     console.log('[App.js] getDerivedStateFromProps', props);
     return state;
   }
+  
 
   // componentWillMount() {
   //   console.log('[App.js] componentWillMount');
@@ -31,6 +38,14 @@ class App extends Component {
 
   componentDidMount() {
     console.log('[App.js] componentDidMount');
+  }
+
+  shouldComponentUpdate(nextProps, nextState) {
+    console.log('[App.js] shouldCComponentUpdate');
+    return true
+  }
+  componentDidUpdate() {
+    console.log('[App.js] componentDidUpdate');
   }
 
   nameChangedHandler = (event, id) => {
@@ -48,8 +63,10 @@ class App extends Component {
 
     const persons = [...this.state.persons];
     persons[personIndex] = person;
-
-    this.setState({ persons: persons });
+    //Updating setState if new state depends on previous state
+    this.setState((prevState, currentProps) => {
+      return  {persons: persons }
+    });
   };
 
   deletePersonHandler = personIndex => {
@@ -63,6 +80,8 @@ class App extends Component {
     const doesShow = this.state.showPersons;
     this.setState({ showPersons: !doesShow });
   };
+
+  loginHandler = () => this.setState({authenticated: true})
 
   render() {
     console.log('[App.js] render');
@@ -79,18 +98,28 @@ class App extends Component {
     }
 
     return (
-      <div className={classes.App}>
-        <Cockpit
-          title={this.props.appTitle}
-          showPersons={this.state.showPersons}
-          persons={this.state.persons}
-          clicked={this.togglePersonsHandler}
-        />
-        {persons}
-      </div>
+        <Aux>
+          <button onClick={() => this.setState({'showCockpit': false})}>Hide Cockpit</button>
+          <AuthContext.Provider value={{authenticated: this.state.authenticated, login: this.loginHandler}}>
+            {this.state.showCockpit ? <Cockpit
+              title={this.props.appTitle}
+              showPersons={this.state.showPersons}
+              personsLength={this.state.persons.length}
+              clicked={this.togglePersonsHandler}
+              login={this.loginHandler}
+            /> : null}
+            {persons}
+          </AuthContext.Provider>          
+        </Aux>
     );
     // return React.createElement('div', {className: 'App'}, React.createElement('h1', null, 'Does this work now?'));
   }
 }
 
-export default App;
+export default withClassCurry(App, classes.App);
+
+/**
+ * 
+      <WithClass classes={classes.App}>
+      </WithClass>
+ */
